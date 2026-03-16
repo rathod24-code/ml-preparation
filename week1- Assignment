@@ -1,0 +1,137 @@
+Assignment-01:
+
+---
+
+import numpy as np
+
+np.random.seed(42)
+M = np.random.randn(4, 4)
+
+# (1) Transpose
+M_T = M.T
+print("M Transpose:\n", M_T)
+print("Shape of M.T:", M_T.shape)
+
+# (2) M multiplied by its transpose
+MMT = np.dot(M, M.T)
+print("\nM · Mᵀ:\n", MMT)
+print("Shape of M·Mᵀ:", MMT.shape)
+
+# (3) Eigenvalues of M·Mᵀ
+eigenvalues, eigenvectors = np.linalg.eig(MMT)
+print("\nEigenvalues of M·Mᵀ:", eigenvalues)
+
+# (4) Determinant
+det = np.linalg.det(MMT)
+print("\nDeterminant of M·Mᵀ:", det)
+
+# Verify symmetry: A is symmetric if A == A.T
+is_symmetric = np.allclose(MMT, MMT.T)
+print("\nIs M·Mᵀ symmetric?", is_symmetric)
+
+# BONUS: Normalize M so each row has unit length
+norms = np.linalg.norm(M, axis=1, keepdims=True)
+M_normalized = M / norms
+row_magnitudes = np.linalg.norm(M_normalized, axis=1)
+print("\nRow magnitudes after normalization (should all be 1.0):", row_magnitudes)
+
+
+Assignment - 02
+
+--
+import numpy as np
+
+def my_mean(data):
+    return sum(data) / len(data)
+
+def my_variance(data):
+    mean = my_mean(data)
+    return sum((x - mean) ** 2 for x in data) / len(data)
+
+def my_std(data):
+    return my_variance(data) ** 0.5
+
+# Test data
+normal_data  = [12, 15, 18, 14, 16, 13, 17, 19, 11, 20]
+outlier_data = [12, 15, 18, 14, 16, 13, 17, 19, 11, 200]
+
+for label, data in [("Normal", normal_data), ("With Outlier", outlier_data)]:
+    print(f"\n--- {label} Data ---")
+    m   = my_mean(data)
+    var = my_variance(data)
+    std = my_std(data)
+    print(f"  My Mean     : {m:.4f}  | NumPy: {np.mean(data):.4f}")
+    print(f"  My Variance : {var:.4f}  | NumPy: {np.var(data):.4f}")
+    print(f"  My Std Dev  : {std:.4f}  | NumPy: {np.std(data):.4f}")
+
+# BONUS: Z-scores for normal_data
+m   = my_mean(normal_data)
+std = my_std(normal_data)
+z_scores = [(x - m) / std for x in normal_data]
+print("\nZ-scores for normal_data:", [round(z, 2) for z in z_scores])
+between_minus1_and_1 = sum(-1 <= z <= 1 for z in z_scores)
+print(f"{between_minus1_and_1}/{len(z_scores)} values have Z-score between -1 and 1"
+      f" ({100*between_minus1_and_1/len(normal_data):.0f}%) — expect ~68%")
+
+
+Assignment-03
+
+---
+
+from sklearn.datasets import load_iris
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Load data
+iris = load_iris(as_frame=True)
+df = iris.frame
+df.columns = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'species']
+
+features = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width']
+
+# Q1: Statistics using NumPy
+print("Q1 — Feature Statistics:")
+print(f"{'Feature':<16} {'Mean':>8} {'Std':>8} {'Min':>8} {'Max':>8}")
+for col in features:
+    arr = df[col].values
+    print(f"{col:<16} {np.mean(arr):>8.3f} {np.std(arr):>8.3f} "
+          f"{np.min(arr):>8.3f} {np.max(arr):>8.3f}")
+
+# Q2: Missing values
+print("\nQ2 — Missing values per column:")
+print(df.isnull().sum())
+
+# Q3: Histograms (2x2 grid)
+fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+for ax, col in zip(axes.flatten(), features):
+    ax.hist(df[col], bins=20, color='steelblue', edgecolor='black')
+    ax.set_title(col)
+    ax.set_xlabel('Value')
+    ax.set_ylabel('Frequency')
+plt.suptitle('Iris Feature Distributions')
+plt.tight_layout()
+plt.show()
+
+# Q4: Pairplot colored by species
+sns.pairplot(df, hue='species', diag_kind='kde')
+plt.suptitle('Iris Pairplot by Species', y=1.02)
+plt.show()
+
+# Q5: Correlation matrix (numeric features only)
+corr = df[features].corr()
+plt.figure(figsize=(7, 5))
+sns.heatmap(corr, annot=True, cmap='coolwarm', fmt='.2f')
+plt.title('Iris Feature Correlation Matrix')
+plt.show()
+
+# Q6: Analysis
+print("\nQ6 — Analysis:")
+print("Most correlated features:", end=" ")
+corr_unstacked = corr.abs().unstack()
+corr_unstacked = corr_unstacked[corr_unstacked < 1].sort_values(ascending=False)
+top_pair = corr_unstacked.index[0]
+print(f"{top_pair[0]} & {top_pair[1]} (r = {corr_unstacked.iloc[0]:.3f})")
+print("Best feature to separate species: petal_length")
+print("  → It shows the clearest separation across all 3 species in the pairplot.")
